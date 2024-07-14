@@ -1,5 +1,10 @@
 package cubas.weatherapp;
 
+import entity.WeatherTable;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Persistence;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
@@ -14,9 +19,11 @@ import javafx.scene.control.TextField;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Timestamp;
 import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,9 +31,9 @@ import java.util.TimerTask;
 import com.google.gson.*;
 import javafx.util.Duration;
 import org.apache.commons.math3.util.Precision;
+import org.hibernate.Session;
 
-import static cubas.weatherapp.WeatherApplication.API_KEY;
-import static cubas.weatherapp.WeatherApplication.BASE_URL;
+import static cubas.weatherapp.WeatherApplication.*;
 
 
 public class WeatherController implements Initializable {
@@ -83,7 +90,6 @@ public class WeatherController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-
     }
 
     @FXML
@@ -105,11 +111,27 @@ public class WeatherController implements Initializable {
     }
 
     public void getData(){
+        Session session = factory.openSession();
+        session.beginTransaction();
+
         weatherConnection(city);
         addData(tempChart,tempSeries,minutesElapsed,tempF);
         addData(cloudChart,cloudSeries,minutesElapsed,cloudCover);
         addData(windChart,windSeries,minutesElapsed,windMph);
         addData(pressureChart,pressureSeries,minutesElapsed,pressureMb);
+
+        WeatherTable entity = new WeatherTable();
+        entity.setCity(city);
+        entity.setTime(new Timestamp(System.currentTimeMillis()));
+        entity.setCloudCover(cloudCover);
+        entity.setTempF(BigDecimal.valueOf(tempF));
+        entity.setWindMph(BigDecimal.valueOf(windMph));
+        entity.setPressureMb(BigDecimal.valueOf(pressureMb));
+        session.save(entity);
+
+        session.getTransaction().commit();
+        session.close();
+
         minutesElapsed += 1;
     }
 
